@@ -1,26 +1,26 @@
 package com.example.yatzy.components
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.ui.text.input.KeyboardType
 
 @Composable
 fun ScoreInputCard(
@@ -30,94 +30,116 @@ fun ScoreInputCard(
     onScoreSelected: (Int?) -> Unit,
     onCrossOut: () -> Unit
 ) {
+    // Speichert den Zustand: Ausgeklappt (true) oder Eingeklappt (false)
+    var expanded by remember { mutableStateOf(false) }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp)
+            .padding(vertical = 4.dp) // Etwas weniger Padding für ein kompakteres Listen-Gefühl
     ) {
-        // 1. Header-Reihe: Titel, Beschreibung und die große Zahl rechts
+        // 1. Der klickbare Header (Kategoriename + Aktueller Punktestand)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 12.dp),
+                .clickable { expanded = !expanded } // Klappt auf/zu beim Anklicken
+                .padding(vertical = 8.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.Top
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Column {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = categoryName,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp
+                    fontSize = 18.sp,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
 
-            // HIER IST DIE ÄNDERUNG: Die > 0 Bedingung ist weg.
-            // Bei 0 wird die Zahl grau, bei Punkten wird sie orange.
-            if (currentValue != null) {
-                Text(
-                    text = currentValue.toString(),
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 28.sp,
-                    color = if (currentValue == 0) Color(0xFF9CA3AF) else Color(0xFFEA580C)
-                )
-            }
-        }
-
-        // 2. Die Zahlen-Reihe
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            // Add Alignment.CenterHorizontally here:
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            possibleScores.forEach { score ->
-                ScoreNumberButton(
-                    number = score,
-                    isSelected = currentValue == score,
-                    onClick = {
-                        val nextValue = if (currentValue == score) null else score
-                        onScoreSelected(nextValue)
-                    }
-                )
-            }
-        }
-
-        // 3. Der "Cross Out" Button
-        Button(
-            onClick = {
-                // HIER IST DIE ÄNDERUNG: Toggle-Logik für das Streichen
-                if (currentValue == 0) {
-                    onScoreSelected(null) // Zurücksetzen, wenn bereits gestrichen
-                } else {
-                    onCrossOut() // Normal streichen
-                }
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 12.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFFF3F3F5),
-                contentColor = Color(0xFF1F2937)
-            ),
-            shape = RoundedCornerShape(10.dp),
-            contentPadding = PaddingValues(12.dp)
-        ) {
+            // Rechte Seite des Headers: Punkte bzw. Platzhalter
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    Icons.Default.Close,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp)
-                )
-                Spacer(Modifier.width(8.dp))
-                Text(
-                    text = "Cross Out",
-                    fontWeight = FontWeight.Medium,
-                    color = if (currentValue == 0) Color.Red else Color.Unspecified
-                )
+                if (currentValue != null) {
+                    Text(
+                        text = currentValue.toString(),
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 28.sp,
+                        color = if (currentValue == 0) Color(0xFF9CA3AF) else Color(0xFFEA580C)
+                    )
+                } else {
+                    // Platzhalter, solange noch keine Zahl eingetragen wurde
+                    Text(
+                        text = "–",
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 28.sp,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                    )
+                }
+            }
+        }
+
+        // 2. Der aufklappbare Inhalt (Zahlen und Cross Out)
+        AnimatedVisibility(visible = expanded) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp, bottom = 8.dp)
+            ) {
+                // Die Zahlen-Reihe
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)
+                ) {
+                    possibleScores.forEach { score ->
+                        ScoreNumberButton( // Hier wird dein bereits vorhandener runder Button aufgerufen
+                            number = score,
+                            isSelected = currentValue == score,
+                            onClick = {
+                                val nextValue = if (currentValue == score) null else score
+                                onScoreSelected(nextValue)
+                                expanded = false // Schließt das Menü automatisch nach Auswahl
+                            }
+                        )
+                    }
+                }
+
+                // Der Cross Out Button
+                Button(
+                    onClick = {
+                        if (currentValue == 0) {
+                            onScoreSelected(null)
+                        } else {
+                            onCrossOut()
+                            expanded = false // Schließt das Menü automatisch beim Streichen
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 16.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        contentColor = MaterialTheme.colorScheme.onSurface
+                    ),
+                    shape = RoundedCornerShape(10.dp),
+                    contentPadding = PaddingValues(12.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Default.Close,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            text = "Cross Out",
+                            fontWeight = FontWeight.Medium,
+                            color = if (currentValue == 0) Color.Red else Color.Unspecified
+                        )
+                    }
+                }
             }
         }
     }
 }
-
 
 @Composable
 fun ScoreNumberButton(
@@ -169,24 +191,33 @@ fun NumericInputCard(
     onScoreSelected: (Int?) -> Unit,
     onCrossOut: () -> Unit
 ) {
+    var expanded by remember { mutableStateOf(false) }
     var inputValue by remember { mutableStateOf("") }
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp)
+            .padding(vertical = 4.dp)
     ) {
+        // Der klickbare Header
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 12.dp),
+                .clickable { expanded = !expanded }
+                .padding(vertical = 8.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.Top
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Column {
-                Text(text = categoryName, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = categoryName,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
             }
 
+            // Rechts: Wert oder Platzhalter ("-")
             if (currentValue != null) {
                 Text(
                     text = currentValue.toString(),
@@ -194,83 +225,80 @@ fun NumericInputCard(
                     fontSize = 28.sp,
                     color = if (currentValue == 0) Color(0xFF9CA3AF) else Color(0xFFEA580C),
                     modifier = Modifier.clickable {
-                        // HIER IST DIE NEUE LOGIK:
-                        // Wenn der Wert größer als 0 ist, schreiben wir ihn zurück ins Textfeld.
-                        // War es ein "Cross Out" (0), lassen wir das Feld leer.
                         inputValue = if (currentValue > 0) currentValue.toString() else ""
-
-                        // Danach geben wir das Feld wieder frei
                         onScoreSelected(null)
+                        expanded = true // Beim Zurücksetzen direkt wieder aufklappen
                     }
+                )
+            } else {
+                Text(
+                    text = "–",
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 28.sp,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
                 )
             }
         }
 
-        if (currentValue == null) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                OutlinedTextField(
-                    value = inputValue,
-                    onValueChange = { newValue ->
-                        if (newValue.all { it.isDigit() }) inputValue = newValue
-                    },
-                    modifier = Modifier.weight(1f),
-                    placeholder = { Text("Sum", color = Color.LightGray) },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    singleLine = true,
-                    shape = RoundedCornerShape(10.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Color(0xFFEA580C),
-                        unfocusedBorderColor = Color(0xFFD1D5DB),
-                        focusedContainerColor = Color.White,
-                        unfocusedContainerColor = Color.White
+        // Der aufklappbare Inhalt
+        AnimatedVisibility(visible = expanded) {
+            Column(modifier = Modifier.padding(top = 8.dp, bottom = 8.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    OutlinedTextField(
+                        value = inputValue,
+                        onValueChange = { newValue ->
+                            if (newValue.all { it.isDigit() }) inputValue = newValue
+                        },
+                        modifier = Modifier.weight(1f),
+                        placeholder = { Text("Sum", color = Color.LightGray) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true,
+                        shape = RoundedCornerShape(10.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color(0xFFEA580C),
+                            unfocusedBorderColor = Color(0xFFD1D5DB)
+                        )
                     )
-                )
+
+                    Button(
+                        onClick = {
+                            val score = inputValue.toIntOrNull()
+                            if (score != null) {
+                                onScoreSelected(score)
+                                inputValue = ""
+                                expanded = false
+                            }
+                        },
+                        enabled = inputValue.isNotBlank(),
+                        shape = RoundedCornerShape(10.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEA580C))
+                    ) {
+                        Icon(Icons.Default.Check, contentDescription = null, tint = Color.White)
+                    }
+                }
 
                 Button(
                     onClick = {
-                        val score = inputValue.toIntOrNull()
-                        if (score != null) {
-                            onScoreSelected(score)
-                            // Das Feld wird erst geleert, wenn die Eingabe erfolgreich war.
-                            // Wenn der User es rückgängig macht, füllt die Logik oben es wieder auf.
-                            inputValue = ""
-                        }
+                        onCrossOut()
+                        inputValue = ""
+                        expanded = false
                     },
-                    enabled = inputValue.isNotBlank(),
-                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFFEA580C),
-                        disabledContainerColor = Color(0xFFF3F3F5)
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        contentColor = MaterialTheme.colorScheme.onSurface
                     ),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 14.dp)
+                    shape = RoundedCornerShape(10.dp)
                 ) {
-                    Icon(Icons.Default.Check, contentDescription = "Bestätigen", tint = Color.White)
-                }
-            }
-
-            Button(
-                onClick = {
-                    onCrossOut()
-                    inputValue = "" // Beim Streichen das eventuell halb getippte Feld leeren
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFF3F3F5),
-                    contentColor = Color(0xFF1F2937)
-                ),
-                shape = RoundedCornerShape(10.dp),
-                contentPadding = PaddingValues(12.dp)
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Close, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(Modifier.width(8.dp))
-                    Text("Cross Out", fontWeight = FontWeight.Medium)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Close, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text("Cross Out", fontWeight = FontWeight.Medium)
+                    }
                 }
             }
         }

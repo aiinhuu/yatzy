@@ -1,15 +1,36 @@
-*.iml
-.gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
+# Gradle-Dateien
+.gradle/
+/build/
+*/build/
+
+# Lokale Konfigurationsdateien (enthalten gerätespezifische Pfade)
 local.properties
+
+# Android Studio / IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+.navigation/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# MacOS / Windows Systemdateien
+.DS_Store
+Thumbs.db
+
+# APKs und App Bundles (generierte Apps nicht ins Repo pushen)
+*.apk
+*.ap_
+*.aab
+
+# Keystore-Dateien (sehr wichtig für die Sicherheit, niemals pushen!)
+*.jks
+*.keystore
+
+# Google Services (falls du Firebase nutzt und die Datei privat bleiben soll)
+# google-services.json
+
+# Profiling und Logs
+*.log
+*.hprof

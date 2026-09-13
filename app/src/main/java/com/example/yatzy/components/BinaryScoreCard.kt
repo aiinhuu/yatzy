@@ -1,5 +1,7 @@
 package com.example.yatzy.components
 
+import android.R.attr.description
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -9,6 +11,10 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -22,41 +28,91 @@ fun BinaryScoreCard(
     categoryName: String,
     scoreValue: Int,
     currentValue: Int?,
-    onScoreSelected: (Int?) -> Unit // Ersetzt onSuccess und onFail
+    onScoreSelected: (Int?) -> Unit
 ) {
-    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
-        Text(text = categoryName, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+    var expanded by remember { mutableStateOf(false) }
 
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            // Success Button (Lila/Blau)
-            ScoreActionButton(
-                label = "Success",
-                value = scoreValue.toString(),
-                icon = Icons.Default.Check,
-                isSelected = currentValue == scoreValue,
-                activeColor = Color(0xFF9333EA),
-                modifier = Modifier.weight(1f),
-                onClick = {
-                    // Toggle-Logik: Wenn bereits Success, setze auf null, sonst auf scoreValue
-                    val nextValue = if (currentValue == scoreValue) null else scoreValue
-                    onScoreSelected(nextValue)
-                }
-            )
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+    ) {
+        // Der klickbare Header
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { expanded = !expanded }
+                .padding(vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = categoryName,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
 
-            // Fail Button (Rot)
-            ScoreActionButton(
-                label = "Fail",
-                value = "0",
-                icon = Icons.Default.Close,
-                isSelected = currentValue == 0,
-                activeColor = Color(0xFFD4183D),
-                modifier = Modifier.weight(1f),
-                onClick = {
-                    // Toggle-Logik: Wenn bereits Fail, setze auf null, sonst auf 0
-                    val nextValue = if (currentValue == 0) null else 0
-                    onScoreSelected(nextValue)
-                }
-            )
+            // Rechts: Wert oder Platzhalter ("-")
+            if (currentValue != null) {
+                Text(
+                    text = currentValue.toString(),
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 28.sp,
+                    color = if (currentValue == 0) Color(0xFF9CA3AF) else Color(0xFFEA580C),
+                    modifier = Modifier.clickable {
+                        onScoreSelected(null)
+                        expanded = true
+                    }
+                )
+            } else {
+                Text(
+                    text = "–",
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 28.sp,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
+                )
+            }
+        }
+
+        // Der aufklappbare Inhalt
+        AnimatedVisibility(visible = expanded) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp, bottom = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                ScoreActionButton(
+                    label = "Success",
+                    value = scoreValue.toString(),
+                    icon = Icons.Default.Check,
+                    isSelected = currentValue == scoreValue,
+                    activeColor = Color(0xFF9333EA),
+                    modifier = Modifier.weight(1f),
+                    onClick = {
+                        val nextValue = if (currentValue == scoreValue) null else scoreValue
+                        onScoreSelected(nextValue)
+                        expanded = false
+                    }
+                )
+
+                ScoreActionButton(
+                    label = "Fail",
+                    value = "0",
+                    icon = Icons.Default.Close,
+                    isSelected = currentValue == 0,
+                    activeColor = Color(0xFFD4183D),
+                    modifier = Modifier.weight(1f),
+                    onClick = {
+                        val nextValue = if (currentValue == 0) null else 0
+                        onScoreSelected(nextValue)
+                        expanded = false
+                    }
+                )
+            }
         }
     }
 }

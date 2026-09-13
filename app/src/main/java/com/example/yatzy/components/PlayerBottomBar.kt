@@ -26,10 +26,10 @@ fun PlayerBottomBar(
     selectedIndex: Int,
     onPlayerSelected: (Int) -> Unit
 ) {
-    // Eine Reihe, die den gesamten unteren Rand ausfüllt
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            //.navigationBarsPadding()
             .background(Color.White)
     ) {
         players.forEachIndexed { index, player ->
@@ -37,7 +37,6 @@ fun PlayerBottomBar(
                 player = player,
                 isSelected = index == selectedIndex,
                 onClick = { onPlayerSelected(index) },
-                // weight(1f) sorgt dafür, dass sich alle Tabs den Platz fair teilen
                 modifier = Modifier.weight(1f)
             )
         }
@@ -61,7 +60,6 @@ private fun PlayerTab(
     Column(
         modifier = modifier
             .background(backgroundColor)
-            // Zeichnet die dicke orange Linie am oberen Rand
             .drawBehind {
                 drawLine(
                     color = topBorderColor,
@@ -71,7 +69,8 @@ private fun PlayerTab(
                 )
             }
             .clickable { onClick() }
-            .padding(vertical = 12.dp),
+            .navigationBarsPadding()
+            .padding(top = 12.dp, bottom = 0.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -79,7 +78,7 @@ private fun PlayerTab(
                 imageVector = Icons.Default.Person,
                 contentDescription = null,
                 tint = contentColor,
-                modifier = Modifier.size(18.dp)
+                modifier = Modifier.size(14.dp)
             )
             Spacer(Modifier.width(4.dp))
             Text(
@@ -92,18 +91,5 @@ private fun PlayerTab(
 
         Spacer(Modifier.height(6.dp))
 
-        // Das Punkte-Badge (Lila oder Grau)
-        Surface(
-            shape = RoundedCornerShape(12.dp),
-            color = badgeColor
-        ) {
-            Text(
-                text = "${player.scoreCard.grandTotal} pts",
-                color = badgeTextColor,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(horizontal = 10.dp, vertical = 2.dp)
-            )
-        }
     }
 }

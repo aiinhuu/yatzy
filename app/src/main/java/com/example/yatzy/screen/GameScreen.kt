@@ -30,8 +30,8 @@ import com.example.yatzy.viewmodel.KniffelViewModel
 @Composable
 fun GameScreen(
     viewModel: KniffelViewModel,
-    isDarkMode: Boolean, // NEU
-    onToggleDarkMode: () -> Unit // NEU
+    isDarkMode: Boolean,
+    onToggleDarkMode: () -> Unit
 ) {
     val state by viewModel.state.collectAsState()
 
@@ -54,20 +54,21 @@ fun GameScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
+                        .statusBarsPadding()
+                        .padding(16.dp, vertical = 0.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "KNIFFEL SCOREBOARD",
-                        fontSize = 24.sp,
+                        text = "KNIFFEL",
+                        fontSize = 50.sp,
+                        lineHeight = 50.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFFEA580C)
+                        color = MaterialTheme.colorScheme.primary,
+                        style = MaterialTheme.typography.displayLarge
                     )
 
-                    // NEU: Ein Row für die beiden Icons oben rechts
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        // Der Dark Mode Toggle Button
                         IconButton(onClick = onToggleDarkMode) {
                             Icon(
                                 imageVector = if (isDarkMode) Icons.Default.LightMode else Icons.Default.DarkMode,
@@ -75,285 +76,282 @@ fun GameScreen(
                                 tint = Color(0xFF6B7280)
                             )
                         }
-
-                        // Der Refresh Button (dein alter Code)
-                        IconButton(onClick = { showSetup = true }) {
-                            Icon(
-                                imageVector = Icons.Default.Refresh,
-                                contentDescription = "New Game",
-                                tint = Color(0xFF6B7280)
-                            )
-                        }
                     }
                 }
-        }, bottomBar = {
-            if (state.players.isNotEmpty()) {
-                PlayerBottomBar(
-                    players = state.players,
-                    selectedIndex = selectedPlayerIndex,
-                    onPlayerSelected = { index ->
-                        selectedPlayerIndex = index
-                    })
-            }
-        }) { paddingValues ->
-            LazyColumn(
+            }, bottomBar = {
+                if (state.players.isNotEmpty()) {
+                    PlayerBottomBar(
+                        players = state.players,
+                        selectedIndex = selectedPlayerIndex,
+                        onPlayerSelected = { index ->
+                            selectedPlayerIndex = index
+                        })
+                }
+            }) { paddingValues ->
+            Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
-                    .background(MaterialTheme.colorScheme.background),
-                contentPadding = PaddingValues(bottom = 32.dp)
+                    .background(MaterialTheme.colorScheme.background)
             ) {
-                // 1. Grand Total Card für den aktuellen Spieler
-                item {
-                    GrandTotalCard(
-                        playerName = currentPlayer?.name ?: "Player",
-                        totalScore = currentPlayer?.scoreCard?.grandTotal ?: 0
-                    )
-                }
+                // 1. Festes Element: Grand Total Card für den aktuellen Spieler
+                // Da es außerhalb der LazyColumn liegt, scrollt es nicht mit!
+                GrandTotalCard(
+                    playerName = currentPlayer?.name ?: "Player",
+                )
 
-                // 2. UPPER SECTION
-                item {
-                    Text(
-                        text = "Upper Section",
-                        modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = Color(0xFFEA580C),
-                        fontWeight = FontWeight.Bold
-                    )
-                }
+                // 2. Scrollbarer Bereich für den Rest des Spiels
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(bottom = 32.dp)
+                ) {
 
-                val upperCategories = ScoreCategory.entries.filter { it.isUpper }
-                itemsIndexed(upperCategories) { index, category ->
-                    val multiplier = index + 1
-                    val possibleScores = (1..5).map { it * multiplier }
-                    val currentValue = currentPlayer?.scoreCard?.scores?.get(category)
-
-                    Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                        ScoreInputCard(
-                            categoryName = category.displayName,
-                            possibleScores = possibleScores,
-                            currentValue = currentValue,
-                            onScoreSelected = { points ->
-                                currentPlayer?.let {
-                                    viewModel.updateScore(
-                                        it.id, category, points
-                                    )
-                                }
-                            },
-                            onCrossOut = {
-                                currentPlayer?.let { viewModel.updateScore(it.id, category, 0) }
-                            })
+                    // 2. UPPER SECTION
+                    item {
+                        Text(
+                            text = "Upper Section",
+                            modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontSize = 26.sp,
+                            color = Color(0xFFEA580C),
+                            fontWeight = FontWeight.Bold
+                        )
                     }
 
-                    if (index < upperCategories.size - 1) {
+                    val upperCategories = ScoreCategory.entries.filter { it.isUpper }
+                    itemsIndexed(upperCategories) { index, category ->
+                        val multiplier = index + 1
+                        val possibleScores = (1..5).map { it * multiplier }
+                        val currentValue = currentPlayer?.scoreCard?.scores?.get(category)
+
+                        Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                            ScoreInputCard(
+                                categoryName = category.displayName,
+                                possibleScores = possibleScores,
+                                currentValue = currentValue,
+                                onScoreSelected = { points ->
+                                    currentPlayer?.let {
+                                        viewModel.updateScore(
+                                            it.id, category, points
+                                        )
+                                    }
+                                },
+                                onCrossOut = {
+                                    currentPlayer?.let { viewModel.updateScore(it.id, category, 0) }
+                                })
+                        }
+
+                        if (index < upperCategories.size - 1) {
+                            HorizontalDivider(
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                                thickness = 1.dp,
+                                color = Color(0xFFF3F3F5)
+                            )
+                        }
+                    }
+
+                    // Upper Section Zusammenfassung (Punkte und Bonus)
+                    item {
+                        Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                            UpperSectionSummary(
+                                subtotal = currentPlayer?.scoreCard?.upperSubtotal ?: 0,
+                                bonus = currentPlayer?.scoreCard?.upperBonus ?: 0
+                            )
+                        }
+                    }
+
+                    // 3. LOWER SECTION
+                    item {
+                        Text(
+                            text = "Lower Section",
+                            modifier = Modifier.padding(start = 16.dp, top = 24.dp, bottom = 8.dp),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontSize = 26.sp,
+                            color = Color(0xFFEA580C),
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                    // Numeric Inputs (Pasch & Chance)
+                    item {
+                        Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                            NumericInputCard(
+                                categoryName = "3 of a Kind",
+                                currentValue = currentPlayer?.scoreCard?.scores?.get(ScoreCategory.THREE_OF_A_KIND),
+                                onScoreSelected = { points ->
+                                    currentPlayer?.let {
+                                        viewModel.updateScore(
+                                            it.id, ScoreCategory.THREE_OF_A_KIND, points
+                                        )
+                                    }
+                                },
+                                onCrossOut = {
+                                    currentPlayer?.let {
+                                        viewModel.updateScore(
+                                            it.id, ScoreCategory.THREE_OF_A_KIND, 0
+                                        )
+                                    }
+                                })
+                        }
                         HorizontalDivider(
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                            thickness = 1.dp,
-                            color = Color(0xFFF3F3F5)
+                            modifier = Modifier.padding(
+                                horizontal = 16.dp, vertical = 8.dp
+                            ), color = Color(0xFFF3F3F5)
                         )
                     }
-                }
 
-                // Upper Section Zusammenfassung (Punkte und Bonus)
-                item {
-                    Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                        UpperSectionSummary(
-                            subtotal = currentPlayer?.scoreCard?.upperSubtotal ?: 0,
-                            bonus = currentPlayer?.scoreCard?.upperBonus ?: 0
+                    item {
+                        Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                            NumericInputCard(
+                                categoryName = "4 of a Kind",
+                                currentValue = currentPlayer?.scoreCard?.scores?.get(ScoreCategory.FOUR_OF_A_KIND),
+                                onScoreSelected = { points ->
+                                    currentPlayer?.let {
+                                        viewModel.updateScore(
+                                            it.id, ScoreCategory.FOUR_OF_A_KIND, points
+                                        )
+                                    }
+                                },
+                                onCrossOut = {
+                                    currentPlayer?.let {
+                                        viewModel.updateScore(
+                                            it.id, ScoreCategory.FOUR_OF_A_KIND, 0
+                                        )
+                                    }
+                                })
+                        }
+                        HorizontalDivider(
+                            modifier = Modifier.padding(
+                                horizontal = 16.dp, vertical = 8.dp
+                            ), color = Color(0xFFF3F3F5)
                         )
                     }
-                }
 
-                // 3. LOWER SECTION
-                item {
-                    Text(
-                        text = "Lower Section",
-                        modifier = Modifier.padding(start = 16.dp, top = 24.dp, bottom = 8.dp),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = Color(0xFFEA580C),
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-
-                // Numeric Inputs (Pasch & Chance)
-                item {
-                    Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                        NumericInputCard(
-                            categoryName = "3 of a Kind",
-                            currentValue = currentPlayer?.scoreCard?.scores?.get(ScoreCategory.THREE_OF_A_KIND),
-                            onScoreSelected = { points ->
-                                currentPlayer?.let {
-                                    viewModel.updateScore(
-                                        it.id, ScoreCategory.THREE_OF_A_KIND, points
-                                    )
-                                }
-                            },
-                            onCrossOut = {
-                                currentPlayer?.let {
-                                    viewModel.updateScore(
-                                        it.id, ScoreCategory.THREE_OF_A_KIND, 0
-                                    )
-                                }
-                            })
+                    // Binary Inputs (Full House, Straights, Yahtzee)
+                    item {
+                        Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                            BinaryScoreCard(
+                                categoryName = "Full House",
+                                scoreValue = 25,
+                                currentValue = currentPlayer?.scoreCard?.scores?.get(ScoreCategory.FULL_HOUSE),
+                                onScoreSelected = { points ->
+                                    currentPlayer?.let {
+                                        viewModel.updateScore(
+                                            it.id, ScoreCategory.FULL_HOUSE, points
+                                        )
+                                    }
+                                })
+                        }
+                        HorizontalDivider(
+                            modifier = Modifier.padding(
+                                horizontal = 16.dp, vertical = 8.dp
+                            ), color = Color(0xFFF3F3F5)
+                        )
                     }
-                    HorizontalDivider(
-                        modifier = Modifier.padding(
-                            horizontal = 16.dp, vertical = 8.dp
-                        ), color = Color(0xFFF3F3F5)
-                    )
-                }
 
-                item {
-                    Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                        NumericInputCard(
-                            categoryName = "4 of a Kind",
-                            currentValue = currentPlayer?.scoreCard?.scores?.get(ScoreCategory.FOUR_OF_A_KIND),
-                            onScoreSelected = { points ->
-                                currentPlayer?.let {
-                                    viewModel.updateScore(
-                                        it.id, ScoreCategory.FOUR_OF_A_KIND, points
-                                    )
-                                }
-                            },
-                            onCrossOut = {
-                                currentPlayer?.let {
-                                    viewModel.updateScore(
-                                        it.id, ScoreCategory.FOUR_OF_A_KIND, 0
-                                    )
-                                }
-                            })
+                    item {
+                        Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                            BinaryScoreCard(
+                                categoryName = "Small Straight",
+                                scoreValue = 30,
+                                currentValue = currentPlayer?.scoreCard?.scores?.get(ScoreCategory.SMALL_STRAIGHT),
+                                onScoreSelected = { points ->
+                                    currentPlayer?.let {
+                                        viewModel.updateScore(
+                                            it.id, ScoreCategory.SMALL_STRAIGHT, points
+                                        )
+                                    }
+                                })
+                        }
+                        HorizontalDivider(
+                            modifier = Modifier.padding(
+                                horizontal = 16.dp, vertical = 8.dp
+                            ), color = Color(0xFFF3F3F5)
+                        )
                     }
-                    HorizontalDivider(
-                        modifier = Modifier.padding(
-                            horizontal = 16.dp, vertical = 8.dp
-                        ), color = Color(0xFFF3F3F5)
-                    )
-                }
 
-                // Binary Inputs (Full House, Straights, Yahtzee)
-                item {
-                    Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                        BinaryScoreCard(
-                            categoryName = "Full House",
-                            scoreValue = 25,
-                            currentValue = currentPlayer?.scoreCard?.scores?.get(ScoreCategory.FULL_HOUSE),
-                            onScoreSelected = { points ->
-                                currentPlayer?.let {
-                                    viewModel.updateScore(
-                                        it.id, ScoreCategory.FULL_HOUSE, points
-                                    )
-                                }
-                            })
+                    item {
+                        Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                            BinaryScoreCard(
+                                categoryName = "Large Straight",
+                                scoreValue = 40,
+                                currentValue = currentPlayer?.scoreCard?.scores?.get(ScoreCategory.LARGE_STRAIGHT),
+                                onScoreSelected = { points ->
+                                    currentPlayer?.let {
+                                        viewModel.updateScore(
+                                            it.id, ScoreCategory.LARGE_STRAIGHT, points
+                                        )
+                                    }
+                                })
+                        }
+                        HorizontalDivider(
+                            modifier = Modifier.padding(
+                                horizontal = 16.dp, vertical = 8.dp
+                            ), color = Color(0xFFF3F3F5)
+                        )
                     }
-                    HorizontalDivider(
-                        modifier = Modifier.padding(
-                            horizontal = 16.dp, vertical = 8.dp
-                        ), color = Color(0xFFF3F3F5)
-                    )
-                }
 
-                item {
-                    Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                        BinaryScoreCard(
-                            categoryName = "Small Straight",
-                            scoreValue = 30,
-                            currentValue = currentPlayer?.scoreCard?.scores?.get(ScoreCategory.SMALL_STRAIGHT),
-                            onScoreSelected = { points ->
-                                currentPlayer?.let {
-                                    viewModel.updateScore(
-                                        it.id, ScoreCategory.SMALL_STRAIGHT, points
-                                    )
-                                }
-                            })
+                    item {
+                        Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                            BinaryScoreCard(
+                                categoryName = "Kniffel",
+                                scoreValue = 50,
+                                currentValue = currentPlayer?.scoreCard?.scores?.get(ScoreCategory.YAHTZEE),
+                                onScoreSelected = { points ->
+                                    currentPlayer?.let {
+                                        viewModel.updateScore(
+                                            it.id, ScoreCategory.YAHTZEE, points
+                                        )
+                                    }
+                                })
+                        }
+                        HorizontalDivider(
+                            modifier = Modifier.padding(
+                                horizontal = 16.dp, vertical = 8.dp
+                            ), color = Color(0xFFF3F3F5)
+                        )
                     }
-                    HorizontalDivider(
-                        modifier = Modifier.padding(
-                            horizontal = 16.dp, vertical = 8.dp
-                        ), color = Color(0xFFF3F3F5)
-                    )
-                }
 
-                item {
-                    Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                        BinaryScoreCard(
-                            categoryName = "Large Straight",
-                            scoreValue = 40,
-                            currentValue = currentPlayer?.scoreCard?.scores?.get(ScoreCategory.LARGE_STRAIGHT),
-                            onScoreSelected = { points ->
-                                currentPlayer?.let {
-                                    viewModel.updateScore(
-                                        it.id, ScoreCategory.LARGE_STRAIGHT, points
-                                    )
-                                }
-                            })
-                    }
-                    HorizontalDivider(
-                        modifier = Modifier.padding(
-                            horizontal = 16.dp, vertical = 8.dp
-                        ), color = Color(0xFFF3F3F5)
-                    )
-                }
-
-                item {
-                    Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                        BinaryScoreCard(
-                            categoryName = "Kniffel",
-                            scoreValue = 50,
-                            currentValue = currentPlayer?.scoreCard?.scores?.get(ScoreCategory.YAHTZEE),
-                            onScoreSelected = { points ->
-                                currentPlayer?.let {
-                                    viewModel.updateScore(
-                                        it.id, ScoreCategory.YAHTZEE, points
-                                    )
-                                }
-                            })
-                    }
-                    HorizontalDivider(
-                        modifier = Modifier.padding(
-                            horizontal = 16.dp, vertical = 8.dp
-                        ), color = Color(0xFFF3F3F5)
-                    )
-                }
-
-                item {
-                    Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                        NumericInputCard(
-                            categoryName = "Chance",
-                            currentValue = currentPlayer?.scoreCard?.scores?.get(ScoreCategory.CHANCE),
-                            onScoreSelected = { points ->
-                                currentPlayer?.let {
-                                    viewModel.updateScore(
-                                        it.id, ScoreCategory.CHANCE, points
-                                    )
-                                }
-                            },
-                            onCrossOut = {
-                                currentPlayer?.let {
-                                    viewModel.updateScore(
-                                        it.id, ScoreCategory.CHANCE, 0
-                                    )
-                                }
-                            })
+                    item {
+                        Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                            NumericInputCard(
+                                categoryName = "Chance",
+                                currentValue = currentPlayer?.scoreCard?.scores?.get(ScoreCategory.CHANCE),
+                                onScoreSelected = { points ->
+                                    currentPlayer?.let {
+                                        viewModel.updateScore(
+                                            it.id, ScoreCategory.CHANCE, points
+                                        )
+                                    }
+                                },
+                                onCrossOut = {
+                                    currentPlayer?.let {
+                                        viewModel.updateScore(
+                                            it.id, ScoreCategory.CHANCE, 0
+                                        )
+                                    }
+                                })
+                        }
                     }
                 }
             }
-        }
 
-        // --- OVERLAYS: SETUP DIALOG & GAME OVER ---
+            // --- OVERLAYS: SETUP DIALOG & GAME OVER ---
 
-        if (showSetup) {
-            NewGameDialog(onStartGame = { names ->
-                viewModel.startWithPlayers(names)
-                showSetup = false
-                selectedPlayerIndex = 0 // Stellt sicher, dass das Spiel bei Spieler 1 startet
-            }, onDismiss = { })
-        }
+            if (showSetup) {
+                NewGameDialog(onStartGame = { names ->
+                    viewModel.startWithPlayers(names)
+                    showSetup = false
+                    selectedPlayerIndex = 0 // Stellt sicher, dass das Spiel bei Spieler 1 startet
+                }, onDismiss = { })
+            }
 
-        if (isGameOver && !showSetup) {
-            GameOverDialog(
-                players = state.players, onPlayAgain = {
-                    showSetup = true
-                })
+            if (isGameOver && !showSetup) {
+                GameOverDialog(
+                    players = state.players, onPlayAgain = {
+                        showSetup = true
+                    })
+            }
         }
     }
 }

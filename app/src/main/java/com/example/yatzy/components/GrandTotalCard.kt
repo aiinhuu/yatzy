@@ -19,18 +19,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun GrandTotalCard(playerName: String, totalScore: Int) {
+fun GrandTotalCard(playerName: String) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp)
+            .padding(14.dp)
             .background(
-                brush = Brush.horizontalGradient(
-                    colors = listOf(Color(0xFFEA580C), Color(0xFFC2410C)) // Dein --orange bis --orange-dark
-                ),
-                shape = RoundedCornerShape(10.dp) // Dein --radius
+                color = MaterialTheme.colorScheme.primary,
+                shape = RoundedCornerShape(10.dp)
             )
-            .padding(20.dp)
+            .padding(16.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
