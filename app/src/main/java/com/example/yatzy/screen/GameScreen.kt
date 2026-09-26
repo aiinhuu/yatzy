@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.LightMode
@@ -38,14 +39,28 @@ fun GameScreen(
     // UI States
     var showSetup by remember { mutableStateOf(!state.isSetupFinished) }
     var selectedPlayerIndex by remember { mutableIntStateOf(0) }
+    var showGameOverDialog by remember { mutableStateOf(false) }
 
     // Der aktuell ausgewählte Spieler basierend auf dem Tab unten
     val currentPlayer = state.players.getOrNull(selectedPlayerIndex)
 
     // Hintergrund-Check für das Spielende (Jeder Spieler hat 13 Felder ausgefüllt)
-    val isGameOver = state.players.isNotEmpty() && state.players.all { player ->
-        val filledSlots = player.scoreCard.scores.values.count { it != null }
-        filledSlots >= 13
+//    val isGameOver by remember(state.players) {
+//        derivedStateOf {
+//            state.players.isNotEmpty() && state.players.all { player ->
+//                player.scoreCard.scores.values.count { it != null } >= 13
+//            }
+//        }
+//    }
+
+    val isGameOver by remember(state.players) {
+        derivedStateOf {
+            state.players.isNotEmpty() && state.players.all { player ->
+                val filledSlots = player.scoreCard.scores.values.count { it != null }
+                // HIER ÄNDERN: Für den Test reicht ein einziges ausgefülltes Feld
+                filledSlots >= 1
+            }
+        }
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -333,24 +348,55 @@ fun GameScreen(
                                 })
                         }
                     }
+                    if (isGameOver) {
+                        item {
+                            Button(
+                                onClick = { showGameOverDialog = true },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(
+                                    0xFF3646D0
+                                )
+                                ), // Grün für Abschluss
+                                shape = RoundedCornerShape(12.dp),
+                                contentPadding = PaddingValues(16.dp)
+                            ) {
+                                Text(
+                                    text = "Show Results",
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                            }
+                        }
+                    }
                 }
             }
 
             // --- OVERLAYS: SETUP DIALOG & GAME OVER ---
 
-            if (showSetup) {
-                NewGameDialog(onStartGame = { names ->
-                    viewModel.startWithPlayers(names)
-                    showSetup = false
-                    selectedPlayerIndex = 0 // Stellt sicher, dass das Spiel bei Spieler 1 startet
-                }, onDismiss = { })
+            if (showSetup) { // Oder wie dein State für den Setup-Screen heißt
+                val lastPlayerNames = state.players.map { it.name }
+
+                NewGameDialog(
+                    initialPlayers = lastPlayerNames,
+                    onStartGame = { names ->
+                        // Hier nutzen wir jetzt den echten Namen aus deinem ViewModel:
+                        viewModel.startWithPlayers(names)
+                        showSetup = false
+                    },
+                    onDismiss = { })
             }
 
-            if (isGameOver && !showSetup) {
+            if (showGameOverDialog) {
                 GameOverDialog(
-                    players = state.players, onPlayAgain = {
+                    players = state.players,
+                    onPlayAgain = {
+                        showGameOverDialog = false // Wichtig: Dialog wieder schließen
                         showSetup = true
-                    })
+                    }
+                )
             }
         }
     }

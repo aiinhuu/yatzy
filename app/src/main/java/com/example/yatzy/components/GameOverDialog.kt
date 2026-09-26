@@ -15,7 +15,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -27,45 +26,45 @@ fun GameOverDialog(
     players: List<Player>,
     onPlayAgain: () -> Unit
 ) {
-    // Sort players descending by their grand total score
+    // Sortiere Spieler absteigend nach ihrer Gesamtpunktzahl
     val sortedPlayers = players.sortedByDescending { it.scoreCard.grandTotal }
     val winner = sortedPlayers.firstOrNull() ?: return
 
     Dialog(
-        onDismissRequest = { /* Prevent dismissing by clicking outside if you want to force an action */ },
+        onDismissRequest = { /* Blockiert das Schließen durch Klicken daneben */ },
+        // Erlaubt dem Dialog, die volle Bildschirmbreite und -höhe einzunehmen
         properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
+        // Vollbild-Surface mit dynamischer Hintergrundfarbe (Dark/Light Mode)
         Surface(
-            modifier = Modifier
-                .fillMaxWidth(0.9f)
-                .wrapContentHeight(),
-            shape = RoundedCornerShape(24.dp),
-            color = Color.White
+            modifier = Modifier.fillMaxSize(),
+            color = MaterialTheme.colorScheme.background
         ) {
-            Column {
-                // Top Gradient Section
+            Column(modifier = Modifier.fillMaxSize()) {
+                // Top Gradient Section (Header)
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(
                             brush = Brush.verticalGradient(
-                                colors = listOf(Color(0xFFF97316), Color(0xFF8B5CF6)) // Orange to Purple
+                                colors = listOf(Color(0xFFF97316), Color(0xFF8B5CF6)) // Orange zu Lila
                             )
                         )
-                        .padding(vertical = 32.dp, horizontal = 16.dp),
+                        // Extra Padding oben für die Statusleiste des Handys
+                        .padding(top = 48.dp, bottom = 32.dp, start = 16.dp, end = 16.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        // Winner Icon Background
+                        // Gewinner-Icon (Stern)
                         Surface(
                             shape = CircleShape,
                             color = Color.White.copy(alpha = 0.2f),
                             modifier = Modifier.size(80.dp)
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Star, // Placeholder for Crown
+                                imageVector = Icons.Default.Star,
                                 contentDescription = "Winner",
-                                tint = Color(0xFFFDE047), // Yellow
+                                tint = Color(0xFFFDE047), // Gelb
                                 modifier = Modifier
                                     .padding(16.dp)
                                     .fillMaxSize()
@@ -106,20 +105,22 @@ fun GameOverDialog(
                     }
                 }
 
-                // Bottom Content Section
+                // Bottom Content Section (Rest des Bildschirms)
                 Column(
-                    modifier = Modifier.padding(24.dp),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
                         text = "Final Scores",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color.Black,
+                        color = MaterialTheme.colorScheme.onBackground,
                         modifier = Modifier.padding(bottom = 16.dp)
                     )
 
-                    // Player Score Cards
+                    // Liste der Spieler-Ergebnisse
                     sortedPlayers.forEachIndexed { index, player ->
                         val isWinner = index == 0
 
@@ -133,7 +134,8 @@ fun GameOverDialog(
                                     shape = RoundedCornerShape(12.dp)
                                 )
                                 .background(
-                                    color = if (isWinner) Color(0xFFF3E8FF) else Color(0xFFF9FAFB),
+                                    // Transparenter Hintergrund für Dark Mode Kompatibilität
+                                    color = if (isWinner) Color(0xFF8B5CF6).copy(alpha = 0.1f) else MaterialTheme.colorScheme.surfaceVariant,
                                     shape = RoundedCornerShape(12.dp)
                                 )
                                 .padding(16.dp),
@@ -146,7 +148,7 @@ fun GameOverDialog(
                                         text = player.name,
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 16.sp,
-                                        color = Color.Black
+                                        color = MaterialTheme.colorScheme.onSurface
                                     )
                                     if (isWinner) {
                                         Surface(
@@ -165,9 +167,9 @@ fun GameOverDialog(
                                     }
                                 }
                                 Text(
-                                    text = if (isWinner) "1st Place" else "${index + 1}nd Place",
+                                    text = "${index + 1}. Place",
                                     fontSize = 12.sp,
-                                    color = Color.Gray
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                                 )
                             }
 
@@ -175,20 +177,21 @@ fun GameOverDialog(
                                 text = "${player.scoreCard.grandTotal}",
                                 fontWeight = FontWeight.ExtraBold,
                                 fontSize = 22.sp,
-                                color = if (isWinner) Color(0xFF8B5CF6) else Color.Black
+                                color = if (isWinner) Color(0xFF8B5CF6) else MaterialTheme.colorScheme.onSurface
                             )
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(24.dp))
+                    // Drückt den Button ganz nach unten an den Rand
+                    Spacer(modifier = Modifier.weight(1f))
 
-                    // Play Again Button with Gradient
+                    // Play Again Button
                     Button(
                         onClick = onPlayAgain,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(56.dp),
-                        contentPadding = PaddingValues(), // Remove default padding to let Box fill it
+                        contentPadding = PaddingValues(),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent)
                     ) {
